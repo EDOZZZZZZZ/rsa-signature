@@ -72,7 +72,7 @@ def pack():
     b = get_cpu_info()
     c = get_disk_info()
     d = get_host_info()
-    e = get_net_info() 
+    e = get_net_info()
     ret = {**a,**b,**c,**d,**e}
     ret["expire"] = expire_date
     return ret
@@ -105,14 +105,15 @@ def verify_certification():
     except:
         print("ERROR: couldn't get full computer identification info")
         exit(-1)
-    hash = int.from_bytes(sha512(j).digest(), byteorder='big')
+    # hash = int.from_bytes(sha512(j).digest(), byteorder='big')
+    hash = int.from_bytes(j, byteorder='big')
     try:
         hashFromSignature = pow(signature, e, n)
     except:
         print("ERROR: invalid public key")
         exit(-1)
+    print("cipher_msg", hashFromSignature.to_bytes(length=hashFromSignature.bit_length()//8+1, byteorder='big'))
     return hash == hashFromSignature
-
 
 if __name__ == "__main__":
     expire_date = sys.argv[1]

@@ -109,7 +109,8 @@ def produce_certification():
         print("ERROR: couldn't get full computer identification info")
         exit(-1)
     # RSA sign the message
-    hash = int.from_bytes(sha512(j).digest(), byteorder='big')
+    # hash = int.from_bytes(sha512(j).digest(), byteorder='big')
+    hash = int.from_bytes(j, byteorder='big')
     signature = pow(hash, d, n)
     if os.path.exists("certification.cert"):
         os.remove("certification.cert")
