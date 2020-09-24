@@ -1,6 +1,7 @@
 # rsa-signature
 ## WARN: DO NOT SHARE `private.pem` WITH ANYONE!!!
-#### Demo Usage
+### Support python3.6+, make sure your linux has subprocess & psutil packages
+#### Demo Usage.
 1. Install package pycryptodome:\
 `pip install pycryptodome`  
 If failure, try `python -m pip install pycryptodome`  
