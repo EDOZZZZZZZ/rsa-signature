@@ -6,12 +6,12 @@ import subprocess
 import socket
 import psutil
 import json
+import datetime
 
 from Crypto.PublicKey import RSA
 from hashlib import sha512
 
 device_white = ['eth0', 'eth1', 'eth2', 'eth3', 'bond0', 'bond1']
-expire_date = ""
 
 def get_mem_info():
     ret = {}
@@ -52,7 +52,6 @@ def get_host_info():
 def get_net_info():
     ret = []
     a = psutil.net_if_addrs()
-    b = a.get('eth0')
     for device in a:
         device_info = a[device]
         if device in device_white:
@@ -74,7 +73,6 @@ def pack():
     d = get_host_info()
     e = get_net_info()
     ret = {**a,**b,**c,**d,**e}
-    ret["expire"] = expire_date
     return ret
 
 def verify_certification():
@@ -101,21 +99,39 @@ def verify_certification():
         exit(-1)
     try:
         p = pack()
-        j = json.dumps(p).encode("utf-8")
+        j = json.dumps(p)
     except:
         print("ERROR: couldn't get full computer identification info")
         exit(-1)
     # hash = int.from_bytes(sha512(j).digest(), byteorder='big')
-    hash = int.from_bytes(j, byteorder='big')
+    # hash = int.from_bytes(j, byteorder='big')
     try:
         hashFromSignature = pow(signature, e, n)
     except:
         print("ERROR: invalid public key")
         exit(-1)
-    print("cipher_msg", hashFromSignature.to_bytes(length=hashFromSignature.bit_length()//8+1, byteorder='big'))
-    return hash == hashFromSignature
+    cipher_msg = hashFromSignature.to_bytes(length=hashFromSignature.bit_length()//8+1, byteorder='big').decode()
+    pos = cipher_msg.rfind("+")
+    date = cipher_msg[pos+1:]
+    if is_expired(date):
+        print("WARN: Signature already expire")
+        exit(0)
+    cipher_msg = cipher_msg[0:pos]
+    pos = cipher_msg.rfind("+")
+    cipher_msg = cipher_msg[0:pos]
+    print("INFO: currently:"+j)
+    return j == cipher_msg
+
+def is_expired(date):
+    if datetime.datetime.now() >= datetime.datetime.strptime(date,'%Y-%m-%d %H:%M:%S'):
+        return True
+    else:
+        return False
 
 if __name__ == "__main__":
-    expire_date = sys.argv[1]
+    len = len(sys.argv)
+    if len != 1:
+        print("invalid arguments")
+        exit(-1)
     print("verifying...")
     print(verify_certification())

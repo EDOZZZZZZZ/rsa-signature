@@ -7,12 +7,14 @@ import socket
 import psutil
 import json
 import os
+import random
+import datetime
+import traceback
 
 from Crypto.PublicKey import RSA
 from hashlib import sha512
 
 device_white = ['eth0', 'eth1', 'eth2', 'eth3', 'bond0', 'bond1']
-expire_date = ""
 
 def get_mem_info():
     ret = {}
@@ -75,12 +77,17 @@ def pack():
     d = get_host_info()
     e = get_net_info()
     ret = {**a,**b,**c,**d,**e}
-    ret["expire"] = expire_date
     return ret
+
+def salt(text):
+    return text+"+"+str(random.random())
+
+def expire(text, expire_date):
+    return text + "+" + str(expire_date)
 
 def produce_key_pair():
     keys = RSA.generate(bits=4096)
-    file_list = ["private.pem", "public.pem", "d.nuei", "n.nuei", "e.nuei"]
+    file_list = ["private.pem", "public.pem"]
     for file_name in file_list:
         if os.path.exists(file_name):
             os.remove(file_name)
@@ -92,7 +99,8 @@ def produce_key_pair():
     file.write(keys.publickey().export_key('PEM'))
     file.close()
 
-def produce_certification():
+def produce_certification(hash_method, text, expire_date):
+    print("producing certification...")
     try:
         file = open("private.pem",'r')
         private_key = RSA.import_key(file.read())
@@ -103,29 +111,72 @@ def produce_certification():
     d = private_key.d
     n = private_key.n
     try:
-        p = pack()
-        j = json.dumps(p).encode("utf-8")
+        s = salt(text)
+        t = expire(s, expire_date)
+        e = t.encode("utf-8")
     except:
-        print("ERROR: couldn't get full computer identification info")
+        print("ERROR: invalid text, need str")
         exit(-1)
     # RSA sign the message
-    # hash = int.from_bytes(sha512(j).digest(), byteorder='big')
-    hash = int.from_bytes(j, byteorder='big')
+    # Hash
+    if hash_method == "-sha512":
+        hash = int.from_bytes(sha512(text.encode("utf-8")).digest(), byteorder='big')
+    elif hash_method == "-none":
+        hash = int.from_bytes(e, byteorder='big')
     signature = pow(hash, d, n)
     if os.path.exists("certification.cert"):
         os.remove("certification.cert")
     file = open("certification.cert", "wb")
-    file.write(str(signature).encode())
+    file.write(str(signature).encode("utf-8"))
     file.close()
 
 if __name__ == "__main__":
-    op = sys.argv[1]
+    len = len(sys.argv)
+    if len > 1:
+        op = sys.argv[1] 
+    else:
+        print("invalid arguments")
+        exit(-1)
     if op == "-k":
         print("producing key pair...")
         produce_key_pair()
         print("finish")
     elif op == "-c":
-        print("producing certification...")
-        expire_date = sys.argv[2]
-        produce_certification()
-        print("finish")
+        if len == 3:
+            expire_date = sys.argv[2]
+            try:
+                expire_date = datetime.datetime.strptime(expire_date, "%Y-%m-%d_%H:%M:%S")
+                print("expire date:"+datetime.datetime.strftime(expire_date, "%Y-%m-%d_%H:%M:%S"))
+            except:
+                print("invalid date arugument")
+                exit(-1)
+            try:
+                p = pack()
+                j = json.dumps(p)
+            except:
+                print("ERROR: couldn't get full computer identification info")
+                exit(-1)
+            produce_certification("-none", j, expire_date)
+            print("finish")
+        # elif len == 4:
+        #     hash_method = sys.argv[2]
+        #     expire_date = sys.argv[3]
+        #     try:
+        #         p = pack()
+        #         j = json.dumps(p)
+        #     except:
+        #         print("ERROR: couldn't get full computer identification info")
+        #         exit(-1)
+        #     if hash_method == "-sha512":
+        #         produce_certification(hash_method,j)
+        #         print("finish")
+        #     elif hash_method == "-none":
+        #         produce_certification(hash_method,j)
+        #         print("finish")
+        else:
+            print("invalid arguments")
+            exit(-1)
+    else:
+        print("invalid arguments")
+        exit(-1)
+    exit(1)
