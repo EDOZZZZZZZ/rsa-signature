@@ -16,6 +16,14 @@ from hashlib import sha512
 
 device_white = ['eth0', 'eth1', 'eth2', 'eth3', 'bond0', 'bond1']
 
+def get_system_serial_number():
+    ret = {}
+    cmd = "dmidecode -s system-serial-number"
+    serial_number = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+    sn = serial_number.stdout.readline().decode().replace("\n","")
+    ret["serial_number"] = sn
+    return ret
+
 def get_mem_info():
     ret = {}
     with open("/proc/meminfo") as f:
@@ -71,12 +79,13 @@ def get_net_info():
     return r
 
 def pack():
-    a = get_mem_info()
-    b = get_cpu_info()
-    c = get_disk_info()
-    d = get_host_info()
-    e = get_net_info()
-    ret = {**a,**b,**c,**d,**e}
+    #a = get_mem_info()
+    #b = get_cpu_info()
+    #c = get_disk_info()
+    #d = get_host_info()
+    #e = get_net_info()
+    f = get_system_serial_number()
+    ret = {**f}
     return ret
 
 def salt(text):
