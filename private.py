@@ -84,8 +84,9 @@ def pack():
     #c = get_disk_info()
     #d = get_host_info()
     #e = get_net_info()
-    f = get_system_serial_number()
-    ret = {**f}
+    #f = get_system_serial_number()
+    #ret = {**f}
+    ret = {}
     return ret
 
 def salt(text):
