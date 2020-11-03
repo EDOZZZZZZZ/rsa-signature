@@ -117,10 +117,10 @@ def verify_certification():
     # hash = int.from_bytes(j, byteorder='big')
     try:
         hashFromSignature = pow(signature, e, n)
+        cipher_msg = hashFromSignature.to_bytes(length=hashFromSignature.bit_length()//8+1, byteorder='big').decode()
     except:
         print("ERROR: invalid public key")
         exit(-1)
-    cipher_msg = hashFromSignature.to_bytes(length=hashFromSignature.bit_length()//8+1, byteorder='big').decode()
     pos = cipher_msg.rfind("+")
     date = cipher_msg[pos+1:]
     if is_expired(date):
